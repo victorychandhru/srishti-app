@@ -20,7 +20,7 @@ jobs:
     - run: yes | sdkmanager --licenses || true
     - run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-    - name: Extract project
+    - name: Extract and fix project
       run: |
         unzip -o SRISHTI_GITHUB.zip -d /tmp/src/
         cp -rf /tmp/src/app ./app
@@ -30,11 +30,21 @@ jobs:
         cp -f /tmp/src/gradlew ./gradlew
         chmod +x gradlew
         printf 'android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx2048m\norg.gradle.daemon=false\n' > gradle.properties
+        cat > app/src/main/res/values/themes.xml << 'THEME'
+        <?xml version="1.0" encoding="utf-8"?>
+        <resources>
+            <style name="Theme.Srishti" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+                <item name="android:windowBackground">#000308</item>
+                <item name="android:statusBarColor">#00000000</item>
+                <item name="android:navigationBarColor">#00000000</item>
+                <item name="android:windowLightStatusBar">false</item>
+            </style>
+        </resources>
+        THEME
 
     - name: Download gradle-wrapper.jar
       run: |
         wget -q "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" -O gradle/wrapper/gradle-wrapper.jar
-        ls -la gradle/wrapper/
 
     - name: Build APK
       run: ./gradlew assembleDebug --no-daemon --no-build-cache
