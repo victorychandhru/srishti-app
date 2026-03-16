@@ -16,21 +16,86 @@ jobs:
         cache: ''
 
     - uses: android-actions/setup-android@v3
-
     - run: yes | sdkmanager --licenses || true
     - run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-    - name: Extract and fix project
+    - name: Setup project
       run: |
         unzip -o SRISHTI_GITHUB.zip -d /tmp/src/
         cp -rf /tmp/src/app ./app
-        cp -f /tmp/src/build.gradle ./build.gradle
         cp -f /tmp/src/settings.gradle ./settings.gradle
         cp -rf /tmp/src/gradle ./gradle
         cp -f /tmp/src/gradlew ./gradlew
         chmod +x gradlew
-        printf 'android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx2048m\norg.gradle.daemon=false\n' > gradle.properties
-        cat > app/src/main/res/values/themes.xml << 'THEME'
+
+        cat > build.gradle << 'BUILDEOF'
+        plugins {
+            id 'com.android.application' version '8.2.0' apply false
+            id 'org.jetbrains.kotlin.android' version '1.9.10' apply false
+            id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.10' apply false
+        }
+        BUILDEOF
+
+        cat > app/build.gradle << 'APPEOF'
+        plugins {
+            id 'com.android.application'
+            id 'org.jetbrains.kotlin.android'
+            id 'org.jetbrains.kotlin.plugin.serialization'
+            id 'kotlin-parcelize'
+        }
+        android {
+            namespace 'com.srishti.app'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.srishti.app"
+                minSdk 26
+                targetSdk 34
+                versionCode 1
+                versionName "1.0.0"
+            }
+            buildTypes {
+                debug { debuggable true }
+            }
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+            kotlinOptions { jvmTarget = '17' }
+            buildFeatures { compose true }
+            composeOptions { kotlinCompilerExtensionVersion '1.5.3' }
+            packaging {
+                resources { excludes += '/META-INF/{AL2.0,LGPL2.1}' }
+            }
+        }
+        dependencies {
+            def bom = platform('androidx.compose:compose-bom:2023.10.01')
+            implementation bom
+            implementation 'androidx.compose.ui:ui'
+            implementation 'androidx.compose.ui:ui-graphics'
+            implementation 'androidx.compose.material3:material3'
+            implementation 'androidx.compose.material:material-icons-extended'
+            implementation 'androidx.compose.animation:animation'
+            implementation 'androidx.compose.foundation:foundation'
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+            implementation 'androidx.activity:activity-compose:1.8.2'
+            implementation 'androidx.navigation:navigation-compose:2.7.6'
+            implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
+            implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+            implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2'
+            implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+            implementation 'io.coil-kt:coil-compose:2.5.0'
+            implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+            implementation 'com.google.accompanist:accompanist-permissions:0.33.2-alpha'
+            implementation 'com.google.accompanist:accompanist-systemuicontroller:0.33.2-alpha'
+            implementation 'androidx.datastore:datastore-preferences:1.0.0'
+            implementation 'com.google.code.gson:gson:2.10.1'
+            implementation 'com.google.android.material:material:1.11.0'
+            debugImplementation 'androidx.compose.ui:ui-tooling'
+        }
+        APPEOF
+
+        cat > app/src/main/res/values/themes.xml << 'THEMEEOF'
         <?xml version="1.0" encoding="utf-8"?>
         <resources>
             <style name="Theme.Srishti" parent="Theme.MaterialComponents.DayNight.NoActionBar">
@@ -38,13 +103,18 @@ jobs:
                 <item name="android:statusBarColor">#00000000</item>
                 <item name="android:navigationBarColor">#00000000</item>
                 <item name="android:windowLightStatusBar">false</item>
+                <item name="android:windowTranslucentStatus">true</item>
+                <item name="android:windowTranslucentNavigation">true</item>
             </style>
         </resources>
-        THEME
+        THEMEEOF
 
-    - name: Download gradle-wrapper.jar
+        printf 'android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx2048m\norg.gradle.daemon=false\n' > gradle.properties
+
+    - name: Get gradle-wrapper.jar
       run: |
-        wget -q "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" -O gradle/wrapper/gradle-wrapper.jar
+        wget -q "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+          -O gradle/wrapper/gradle-wrapper.jar
 
     - name: Build APK
       run: ./gradlew assembleDebug --no-daemon --no-build-cache
