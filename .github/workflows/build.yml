@@ -8,40 +8,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
-    - name: Extract ZIP
-      run: |
-        unzip -o SRISHTI_GITHUB.zip -d extracted/
-        cp -rf extracted/* . 2>/dev/null || true
-        for dir in extracted/*/; do
-          cp -rf "$dir"* . 2>/dev/null || true
-        done
-
     - uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-
+    - uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.4'
     - uses: android-actions/setup-android@v3
-
-    - name: Install Gradle
+    - run: yes | sdkmanager --licenses || true
+    - run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+    - name: Extract project
       run: |
-        wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip
-        unzip -q gradle-8.4-bin.zip
-        export PATH=$PWD/gradle-8.4/bin:$PATH
-        echo "PATH=$PWD/gradle-8.4/bin:$PATH" >> $GITHUB_ENV
-
-    - name: Accept licenses
-      run: yes | sdkmanager --licenses || true
-
-    - name: Install SDK
-      run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
+        unzip -o SRISHTI_GITHUB.zip -d /tmp/src/
+        cp -rf /tmp/src/app ./app
+        cp -f /tmp/src/build.gradle ./build.gradle
+        cp -f /tmp/src/settings.gradle ./settings.gradle
+        cp -rf /tmp/src/gradle ./gradle
+        cp -f /tmp/src/gradlew ./gradlew
+        echo "=== build.gradle first lines ==="
+        head -5 build.gradle
+        echo "=== app folder ==="
+        ls app/
     - name: Build APK
-      run: |
-        chmod +x gradlew
-        gradle assembleDebug --no-daemon
-
+      run: gradle assembleDebug --no-daemon
     - uses: actions/upload-artifact@v4
       with:
         name: SRISHTI-APK
