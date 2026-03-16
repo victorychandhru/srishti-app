@@ -29,9 +29,12 @@ jobs:
         cp -rf /tmp/src/gradle ./gradle
         cp -f /tmp/src/gradlew ./gradlew
         chmod +x gradlew
-        echo "android.useAndroidX=true" >> gradle.properties
-        echo "android.enableJetifier=true" >> gradle.properties
-        echo "org.gradle.jvmargs=-Xmx2048m" >> gradle.properties
+        printf 'android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx2048m\norg.gradle.daemon=false\n' > gradle.properties
+
+    - name: Download gradle-wrapper.jar
+      run: |
+        wget -q "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" -O gradle/wrapper/gradle-wrapper.jar
+        ls -la gradle/wrapper/
 
     - name: Build APK
       run: ./gradlew assembleDebug --no-daemon --no-build-cache
