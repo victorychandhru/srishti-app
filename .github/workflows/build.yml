@@ -16,45 +16,12 @@ jobs:
     - uses: android-actions/setup-android@v3
     - run: yes | sdkmanager --licenses || true
     - run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-    - name: Fix and build
+    - name: Extract and build
       run: |
-        unzip -o SRISHTI_GITHUB.zip -d /tmp/src/
-        cp -rf /tmp/src/app ./app
-        cp -f /tmp/src/settings.gradle ./settings.gradle
-        cp -rf /tmp/src/gradle ./gradle
-        cp -f /tmp/src/gradlew ./gradlew
+        unzip -o SRISHTI_FIXED.zip -d /tmp/src/
+        cp -rf /tmp/src/. ./
         chmod +x gradlew
         printf 'android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx2048m\norg.gradle.daemon=false\n' > gradle.properties
-        cat > app/src/main/res/values/themes.xml << 'THEME'
-        <?xml version="1.0" encoding="utf-8"?>
-        <resources>
-        <style name="Theme.Srishti" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:windowBackground">#000308</item>
-        <item name="android:statusBarColor">#00000000</item>
-        <item name="android:windowLightStatusBar">false</item>
-        </style>
-        </resources>
-        THEME
-        cat > app/src/main/res/drawable/ic_launcher.xml << 'ICON'
-        <?xml version="1.0" encoding="utf-8"?>
-        <vector xmlns:android="http://schemas.android.com/apk/res/android"
-        android:width="108dp" android:height="108dp"
-        android:viewportWidth="108" android:viewportHeight="108">
-        <path android:fillColor="#000308" android:pathData="M0,0h108v108h-108z"/>
-        <path android:fillColor="#00D4FF" android:pathData="M54,18A36,36 0 1,1 53.99,18ZM54,28A26,26 0 1,0 54.01,28Z"/>
-        <path android:fillColor="#8B00FF" android:pathData="M54,40A14,14 0 1,1 53.99,40Z"/>
-        <path android:fillColor="#00FFDD" android:pathData="M54,47A7,7 0 1,1 53.99,47Z"/>
-        </vector>
-        ICON
-        cp app/src/main/res/drawable/ic_launcher.xml app/src/main/res/drawable/ic_launcher_round.xml
-        cat > build.gradle << 'BG'
-        plugins {
-        id 'com.android.application' version '8.2.0' apply false
-        id 'org.jetbrains.kotlin.android' version '1.9.10' apply false
-        id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.10' apply false
-        }
-        BG
-        sed -i "s/com.google.android.material:material:1.11.0/com.google.android.material:material:1.11.0/" app/build.gradle 2>/dev/null || true
         wget -q "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" -O gradle/wrapper/gradle-wrapper.jar
         ./gradlew assembleDebug --no-daemon --no-build-cache
     - uses: actions/upload-artifact@v4
